@@ -7,7 +7,7 @@ function isSuccesfullyPassed = CheckWayPointTrack(bodyXYZPosition, actualTime, t
     for i = 1:length(timeForWaypointPasage)
       referenceTime = timeForWaypointPasage(i);
 
-      if (referenceTime > actualTime)
+      if (referenceTime ~= actualTime)
         break
       end
 
