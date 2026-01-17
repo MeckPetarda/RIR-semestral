@@ -17,7 +17,7 @@ wayPoints = [0 0 -6;        % [X, Y, Z] - waypoint in [m]
 positionTolerance = 0.1;    % [m]
 
 % Simulation parameters
-deltaT = 0.01;              % [s]
+deltaT = 0.1;              % [s]
 simulationTime = max(timeForWaypointPasage) + 20; % [s]
 g = 9.81;
 
@@ -35,18 +35,18 @@ YMomentOfInertia =  0.023;  % [kg m^2]
 ZMomentOfInertia =  0.047;  % [kg m^2]
 
 % Initial state of quadcopter
-quadcopterInitState.BodyXYZPosition.X = 0;  % [m]
-quadcopterInitState.BodyXYZPosition.Y = 0;  % [m]
-quadcopterInitState.BodyXYZPosition.Z = -1; % [m]           
-quadcopterInitState.BodyXYZVelocity.X = 0;            
-quadcopterInitState.BodyXYZVelocity.Y = 0;            
-quadcopterInitState.BodyXYZVelocity.Z = 0;
-quadcopterInitState.BodyEulerAngle.Phi = 0;
-quadcopterInitState.BodyEulerAngle.Theta = 0;
-quadcopterInitState.BodyEulerAngle.Psi = 0;
-quadcopterInitState.BodyAngularRate.dPhi = 0;
-quadcopterInitState.BodyAngularRate.dTheta = 0;
-quadcopterInitState.BodyAngularRate.dPsi = 0;
+% quadcopterInitState.BodyXYZPosition.X = 0;  % [m]
+% quadcopterInitState.BodyXYZPosition.Y = 0;  % [m]
+% quadcopterInitState.BodyXYZPosition.Z = -6; % [m]           
+% quadcopterInitState.BodyXYZVelocity.X = 0;            
+% quadcopterInitState.BodyXYZVelocity.Y = 0;            
+% quadcopterInitState.BodyXYZVelocity.Z = 0;
+% quadcopterInitState.BodyEulerAngle.Phi = 0;
+% quadcopterInitState.BodyEulerAngle.Theta = 0;
+% quadcopterInitState.BodyEulerAngle.Psi = 0;
+% quadcopterInitState.BodyAngularRate.dPhi = 0;
+% quadcopterInitState.BodyAngularRate.dTheta = 0;
+% quadcopterInitState.BodyAngularRate.dPsi = 0;
 
 % --- Z REGULATOR ---
 % State: [z, v_z]
@@ -104,202 +104,202 @@ B_phi = [0; 1/XMomentOfInertia];
 poles_phi = [-1.5, -2.0];  % Same speed as theta
 R_phi = place(A_phi, B_phi, poles_phi);
 
-%% ========== ATTITUDE CONTROLLER (SECONDARY STAGE) ==========
-% Simple proportional controller for attitude tracking
-% Takes desired Î¸, Ï† from X, Y regulators and converts to moments
-
-Kp_theta = 0.5;  % Proportional gain for pitch
-Kp_phi = 0.5;    % Proportional gain for roll
-Ki_theta = 0.05; % Integral gain (optional)
-Ki_phi = 0.05;
-
 % Control variables - total thrust and moments on each control axis
-quadcopterInitControlInputs = [0, 0, 0, 0]';     % (T, M1, M2, M3)
+% quadcopterInitControlInputs = [0, 0, 0, 0]';     % (T, M1, M2, M3)
                            
 % Initiate quadcopter
-quadcopter = Quadcopter(Mass, ...               
-               XMomentOfInertia, ...
-               YMomentOfInertia, ...
-               ZMomentOfInertia, ...
-               quadcopterInitState, ...
-               quadcopterInitControlInputs,...
-               deltaT);
+% quadcopter = Quadcopter(Mass, ...               
+%                XMomentOfInertia, ...
+%                YMomentOfInertia, ...
+%                ZMomentOfInertia, ...
+%                quadcopterInitState, ...
+%                quadcopterInitControlInputs,...
+%                deltaT);
 
 % Store history for plotting
-history.time = [];
-history.z = [];
-history.x = [];
-history.y = [];
-history.psi = [];
-history.T = [];
-history.theta_des = [];
-history.phi_des = [];
-history.psi_meas = [];
+% history.time = [];
+% history.z = [];
+% history.x = [];
+% history.y = [];
+% history.psi = [];
+% history.T = [];
+% history.theta_des = [];
+% history.phi_des = [];
+% history.psi_meas = [];
 
-%sim("model.slx")
+trajectory_data = TrajectorySetup();
 
-% Simulation
-for t = 1 : deltaT : simulationTime
+% Create Estimation Data Bus for Simulink Model
+trajectory_data_bus_info = Simulink.Bus.createObject(trajectory_data);
+trajectory_data_bus = evalin('base', trajectory_data_bus_info.busName);
 
-    % ===== POSITION/ALTITUDE REGULATORS (OUTER LOOP) =====
-    % All regulators compute error from reference and apply feedback
+out = sim("model.slx");
 
-    state = quadcopter.GetState();
+PlotTrajectory3D(out)
+PlotSimulationResults(out)
 
-    X = state.BodyXYZPosition.X;
-    Y = state.BodyXYZPosition.Y;
-    Z = state.BodyXYZPosition.Z;
-
-    vX = state.BodyXYZVelocity.X;
-    vY = state.BodyXYZVelocity.Y;
-    vZ = state.BodyXYZVelocity.Z;
-
-    phi = state.BodyEulerAngle.Phi;
-    theta = state.BodyEulerAngle.Theta;
-    psi = state.BodyEulerAngle.Psi;
-
-    omega_phi = state.BodyAngularRate.dPhi;
-    omega_theta = state.BodyAngularRate.dTheta;
-    omega_psi = state.BodyAngularRate.dPsi;
-
-    target = [X, Y, Z];
-
-    for j = 1:length(timeForWaypointPasage)
-        if (timeForWaypointPasage(j) > t)
-            target = wayPoints(j, :);
-            break;
-        end
-    end
-
-    x_ref = target(1);
-    y_ref = target(2);
-    z_ref = target(3);
-
-    phi_ref = 0;
-    theta_ref = 0;
-    psi_ref = 0;
-
-    % Z regulator
-    z_error = [Z - z_ref; vZ];
-    delta_T = -R_z * z_error;  % Î"T from regulator
-    T_command = Mass*g + delta_T;  % Total thrust = hover thrust + perturbation
-
-    max_angle = 10*DegreeToRadian;
-
-    % X regulator
-    x_error = [X - x_ref; vX];
-    theta_des = max(min(-R_x * x_error, max_angle), -max_angle);  % Desired pitch angle (note the sign)
-
-    % Y regulator
-    y_error = [Y - y_ref; vY];
-    phi_des = max(min(-R_y * y_error, max_angle), -max_angle);   % Desired roll angle
-
-    max_angle = 30 * DegreeToRadian;  % Max 30 degree tilt
-    theta_des = max(min(theta_des, max_angle), -max_angle);
-    phi_des = max(min(phi_des, max_angle), -max_angle);
-
-    % Psi regulator
-    psi_error = [psi - psi_ref; omega_psi];
-    M3_command = -R_psi * psi_error;  % Yaw moment for heading control
-
-    % ===== ATTITUDE CONTROLLER (MIDDLE LAYER) =====
-    % Takes desired Î¸, Ï† and compares with actual Î¸, Ï†
-
-    theta_error_state = [theta - theta_des; omega_theta];
-    M2_command = -R_theta * theta_error_state;
-
-    phi_error_state = [phi - phi_des; omega_phi];
-    M1_command = -R_phi * phi_error_state;
-
-    T_max = 2 * Mass * g;        % Max thrust (twice hover)
-    T_min = 0;                    % No negative thrust
-    max_moment = 0.1;             % Max moment in Nâ‹…m
-
-    % Then apply saturation:
-    T_command = max(min(T_command, T_max), T_min);
-
-    M1_command = max(min(M1_command, max_moment), -max_moment);
-    M2_command = max(min(M2_command, max_moment), -max_moment);
-    M3_command = max(min(M3_command, max_moment), -max_moment);
-
-    % Action for total thrust
-    quadcopter.TotalThrustControlAction(T_command);
-    % Action for attitude
-    quadcopter.AttitudeControlAction(M1_command, M2_command, M3_command);
-
-    % Update state of quadcopter
-    quadcopter.UpdateState();
-
-    % Get actual state of quadcopter
-    quadcopterActualState = quadcopter.GetState();
-
-    % Crash check
-    if (quadcopterActualState.BodyXYZPosition.Z >= 0)
-        msgbox('Quadcopter Crashed!', 'Error', 'error');
-        break;
-    end
-
-    % Waypoint check
-    if (CheckWayPointTrack(...
-                quadcopterActualState.BodyXYZPosition,...
-                t,...
-                timeForWaypointPasage,...
-                wayPoints,...
-                positionTolerance))
-        %msgbox('Quadcopter did not passed waypoint', 'Error', 'error');
-        %break;
-    end
-
-        % ===== LOGGING =====
-    history.time = [history.time; t];
-    history.z = [history.z; Z];
-    history.x = [history.x; X];
-    history.y = [history.y; Y];
-    history.psi = [history.psi; psi];
-    history.T = [history.T; T_command];
-    history.theta_des = [history.theta_des; theta_des];
-    history.phi_des = [history.phi_des; phi_des];
-    history.psi_meas = [history.psi_meas; psi];
-end                              
-
-%% ========== PLOTTING ==========
-figure('Position', [100 100 1200 800]);
-
-subplot(2,3,1);
-plot(history.time, history.z, 'b', 'LineWidth', 2);
-hold on; plot(history.time, z_ref*ones(size(history.time)), 'r--', 'LineWidth', 1.5);
-xlabel('Time (s)'); ylabel('Altitude Z (m)'); legend('Actual', 'Reference');
-grid on;
-
-subplot(2,3,2);
-plot(history.time, history.x, 'b', 'LineWidth', 2);
-hold on; plot(history.time, x_ref*ones(size(history.time)), 'r--', 'LineWidth', 1.5);
-xlabel('Time (s)'); ylabel('Position X (m)'); legend('Actual', 'Reference');
-grid on;
-
-subplot(2,3,3);
-plot(history.time, history.y, 'b', 'LineWidth', 2);
-hold on; plot(history.time, y_ref*ones(size(history.time)), 'r--', 'LineWidth', 1.5);
-xlabel('Time (s)'); ylabel('Position Y (m)'); legend('Actual', 'Reference');
-grid on;
-
-subplot(2,3,4);
-plot(history.time, history.T, 'g', 'LineWidth', 2);
-hold on; plot(history.time, Mass*g*ones(size(history.time)), 'k--', 'LineWidth', 1);
-xlabel('Time (s)'); ylabel('Thrust T (N)');
-legend('Command', 'Hover thrust');
-grid on;
-
-subplot(2,3,5);
-plot(history.time, history.theta_des, 'r', 'LineWidth', 1.5);
-hold on; plot(history.time, history.phi_des, 'b', 'LineWidth', 1.5);
-xlabel('Time (s)'); ylabel('Angle (rad)');
-legend('Î¸_{des}', 'Ï†_{des}');
-grid on;
-
-subplot(2,3,6);
-plot(history.time, history.psi, 'b', 'LineWidth', 2);
-hold on; plot(history.time, psi_ref*ones(size(history.time)), 'r--', 'LineWidth', 1.5);
-xlabel('Time (s)'); ylabel('Heading Ïˆ (rad)');
-legend('Actual', 'Reference');
-grid on;
+% % Simulation
+% for t = 1 : deltaT : simulationTime
+% 
+%     % ===== POSITION/ALTITUDE REGULATORS (OUTER LOOP) =====
+%     % All regulators compute error from reference and apply feedback
+% 
+%     state = quadcopter.GetState();
+% 
+%     X = state.BodyXYZPosition.X;
+%     Y = state.BodyXYZPosition.Y;
+%     Z = state.BodyXYZPosition.Z;
+% 
+%     vX = state.BodyXYZVelocity.X;
+%     vY = state.BodyXYZVelocity.Y;
+%     vZ = state.BodyXYZVelocity.Z;
+% 
+%     phi = state.BodyEulerAngle.Phi;
+%     theta = state.BodyEulerAngle.Theta;
+%     psi = state.BodyEulerAngle.Psi;
+% 
+%     omega_phi = state.BodyAngularRate.dPhi;
+%     omega_theta = state.BodyAngularRate.dTheta;
+%     omega_psi = state.BodyAngularRate.dPsi;
+% 
+%     target = [X, Y, Z];
+% 
+%     for j = 1:length(timeForWaypointPasage)
+%         if (timeForWaypointPasage(j) > t)
+%             target = wayPoints(j, :);
+%             break;
+%         end
+%     end
+% 
+%     x_ref = target(1);
+%     y_ref = target(2);
+%     z_ref = target(3);
+% 
+%     phi_ref = 0;
+%     theta_ref = 0;
+%     psi_ref = 0;
+% 
+%     % Z regulator
+%     z_error = [Z - z_ref; vZ];
+%     delta_T = -R_z * z_error;  % Î"T from regulator
+%     T_command = Mass*g + delta_T;  % Total thrust = hover thrust + perturbation
+% 
+%     max_angle = 10*DegreeToRadian;
+% 
+%     % X regulator
+%     x_error = [X - x_ref; vX];
+%     theta_des = max(min(-R_x * x_error, max_angle), -max_angle);  % Desired pitch angle (note the sign)
+% 
+%     % Y regulator
+%     y_error = [Y - y_ref; vY];
+%     phi_des = max(min(-R_y * y_error, max_angle), -max_angle);   % Desired roll angle
+% 
+%     max_angle = 30 * DegreeToRadian;  % Max 30 degree tilt
+%     theta_des = max(min(theta_des, max_angle), -max_angle);
+%     phi_des = max(min(phi_des, max_angle), -max_angle);
+% 
+%     % Psi regulator
+%     psi_error = [psi - psi_ref; omega_psi];
+%     M3_command = -R_psi * psi_error;  % Yaw moment for heading control
+% 
+%     % ===== ATTITUDE CONTROLLER (MIDDLE LAYER) =====
+%     % Takes desired Î¸, Ï† and compares with actual Î¸, Ï†
+% 
+%     theta_error_state = [theta - theta_des; omega_theta];
+%     M2_command = -R_theta * theta_error_state;
+% 
+%     phi_error_state = [phi - phi_des; omega_phi];
+%     M1_command = -R_phi * phi_error_state;
+% 
+%     T_max = 2 * Mass * g;        % Max thrust (twice hover)
+%     T_min = 0;                    % No negative thrust
+%     max_moment = 0.1;             % Max moment in Nâ‹…m
+% 
+%     % Then apply saturation:
+%     T_command = max(min(T_command, T_max), T_min);
+% 
+%     M1_command = max(min(M1_command, max_moment), -max_moment);
+%     M2_command = max(min(M2_command, max_moment), -max_moment);
+%     M3_command = max(min(M3_command, max_moment), -max_moment);
+% 
+%     % Action for total thrust
+%     quadcopter.TotalThrustControlAction(T_command);
+%     % Action for attitude
+%     quadcopter.AttitudeControlAction(M1_command, M2_command, M3_command);
+% 
+%     % Update state of quadcopter
+%     quadcopter.UpdateState();
+% 
+%     % Get actual state of quadcopter
+%     quadcopterActualState = quadcopter.GetState();
+% 
+%     % Crash check
+%     if (quadcopterActualState.BodyXYZPosition.Z >= 0)
+%         msgbox('Quadcopter Crashed!', 'Error', 'error');
+%         break;
+%     end
+% 
+%     % Waypoint check
+%     if (CheckWayPointTrack(...
+%                 quadcopterActualState.BodyXYZPosition,...
+%                 t,...
+%                 timeForWaypointPasage,...
+%                 wayPoints,...
+%                 positionTolerance))
+%         %msgbox('Quadcopter did not passed waypoint', 'Error', 'error');
+%         %break;
+%     end
+% 
+%         % ===== LOGGING =====
+%     history.time = [history.time; t];
+%     history.z = [history.z; Z];
+%     history.x = [history.x; X];
+%     history.y = [history.y; Y];
+%     history.psi = [history.psi; psi];
+%     history.T = [history.T; T_command];
+%     history.theta_des = [history.theta_des; theta_des];
+%     history.phi_des = [history.phi_des; phi_des];
+%     history.psi_meas = [history.psi_meas; psi];
+% end                              
+% 
+% %% ========== PLOTTING ==========
+% figure('Position', [100 100 1200 800]);
+% 
+% subplot(2,3,1);
+% plot(history.time, history.z, 'b', 'LineWidth', 2);
+% hold on; plot(history.time, z_ref*ones(size(history.time)), 'r--', 'LineWidth', 1.5);
+% xlabel('Time (s)'); ylabel('Altitude Z (m)'); legend('Actual', 'Reference');
+% grid on;
+% 
+% subplot(2,3,2);
+% plot(history.time, history.x, 'b', 'LineWidth', 2);
+% hold on; plot(history.time, x_ref*ones(size(history.time)), 'r--', 'LineWidth', 1.5);
+% xlabel('Time (s)'); ylabel('Position X (m)'); legend('Actual', 'Reference');
+% grid on;
+% 
+% subplot(2,3,3);
+% plot(history.time, history.y, 'b', 'LineWidth', 2);
+% hold on; plot(history.time, y_ref*ones(size(history.time)), 'r--', 'LineWidth', 1.5);
+% xlabel('Time (s)'); ylabel('Position Y (m)'); legend('Actual', 'Reference');
+% grid on;
+% 
+% subplot(2,3,4);
+% plot(history.time, history.T, 'g', 'LineWidth', 2);
+% hold on; plot(history.time, Mass*g*ones(size(history.time)), 'k--', 'LineWidth', 1);
+% xlabel('Time (s)'); ylabel('Thrust T (N)');
+% legend('Command', 'Hover thrust');
+% grid on;
+% 
+% subplot(2,3,5);
+% plot(history.time, history.theta_des, 'r', 'LineWidth', 1.5);
+% hold on; plot(history.time, history.phi_des, 'b', 'LineWidth', 1.5);
+% xlabel('Time (s)'); ylabel('Angle (rad)');
+% legend('Î¸_{des}', 'Ï†_{des}');
+% grid on;
+% 
+% subplot(2,3,6);
+% plot(history.time, history.psi, 'b', 'LineWidth', 2);
+% hold on; plot(history.time, psi_ref*ones(size(history.time)), 'r--', 'LineWidth', 1.5);
+% xlabel('Time (s)'); ylabel('Heading Ïˆ (rad)');
+% legend('Actual', 'Reference');
+% grid on;
