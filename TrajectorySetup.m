@@ -1,4 +1,4 @@
-function trajectory_data = TrajectorySetup()
+function trajectory_data = TrajectorySetup(wayPoints, timeForWaypointPasage)
     % TrajectorySetup - Pre-compute cubic spline trajectory
     %
     % This script generates the complete trajectory offline (before Simulink runs)
@@ -8,16 +8,7 @@ function trajectory_data = TrajectorySetup()
     %   TrajectorySetup()
     %
     % This creates 'trajectory_data.mat' in the current directory
-    
-    clear all;
-    
-    % Define waypoints and their required passage times
-    timeForWaypointPasage = [140, 280, 360, 480, 600];  % [s]
-    wayPoints = [0 0 -6;        % Waypoint 1
-                 1.2 1 -6;      % Waypoint 2
-                 1.5 0 -5;      % Waypoint 3
-                 0 1.5 -7;      % Waypoint 4
-                 -1 1 -6];      % Waypoint 5
+ 
     
     % Create cubic spline interpolants (position)
     pp_x = spline(timeForWaypointPasage, wayPoints(:,1));

@@ -21,6 +21,15 @@ XMomentOfInertia =  0.023;  % [kg m^2]
 YMomentOfInertia =  0.023;  % [kg m^2]
 ZMomentOfInertia =  0.047;  % [kg m^2]
 
+   
+% Define waypoints and their required passage times
+timeForWaypointPasage = [140, 280, 360, 480, 600];  % [s]
+wayPoints = [0 0 -6;        % Waypoint 1
+             1.2 1 -6;      % Waypoint 2
+             1.5 0 -5;      % Waypoint 3
+             0 1.5 -7;      % Waypoint 4
+             -1 1 -6];      % Waypoint 5
+
 %% --- Z REGULATOR ---
 % State: [z, v_z]
 % Control: Î"T (thrust perturbation from hover)
@@ -77,7 +86,7 @@ poles_psi = [-0.2, -0.25];  % Slow yaw correction
 R_psi = place(A_psi, B_psi, poles_psi);
 fprintf('Psi regulator gains R_psi: %f, %f\n', R_psi(1), R_psi(2));
 
-trajectory_data = TrajectorySetup();
+trajectory_data = TrajectorySetup(wayPoints, timeForWaypointPasage);
 
 % Create Estimation Data Bus for Simulink Model
 trajectory_data_bus_info = Simulink.Bus.createObject(trajectory_data);
