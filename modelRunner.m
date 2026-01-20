@@ -36,7 +36,7 @@ wayPoints = [0 0 -6;        % Waypoint 1
 A_z = [0  1;
        0  0];
 B_z = [0; -1/Mass];
-poles_z = [-0.5, -0.6];  % Slower poles for altitude
+poles_z = [-0.6, -0.8];  % Slower poles for altitude
 R_z = place(A_z, B_z, poles_z);
 fprintf('Z regulator gains R_z: %f, %f\n', R_z(1), R_z(2));
 
@@ -55,7 +55,7 @@ fprintf('X regulator gains R_x: %f, %f\n', R_x(1), R_x(2));
 A_theta = [0  1;
            0  0];
 B_theta = [0; 1/YMomentOfInertia];
-poles_theta = [-1.5, -2.0];  % Faster than position loop
+poles_theta = [-2, -2.5];  % Faster than position loop
 R_theta = place(A_theta, B_theta, poles_theta);
 
 %% --- Y REGULATOR ---
@@ -73,7 +73,7 @@ fprintf('Y regulator gains R_y: %f, %f\n', R_y(1), R_y(2));
 A_phi = [0  1;
          0  0];
 B_phi = [0; 1/XMomentOfInertia];
-poles_phi = [-1.5, -2.0];  % Same speed as theta
+poles_phi = [-2, -2.5];  % Same speed as theta
 R_phi = place(A_phi, B_phi, poles_phi);
 
 %% --- PSI REGULATOR ---
@@ -82,7 +82,7 @@ R_phi = place(A_phi, B_phi, poles_phi);
 A_psi = [0  1;
          0  0];
 B_psi = [0; 1/ZMomentOfInertia];
-poles_psi = [-0.2, -0.25];  % Slow yaw correction
+poles_psi = [-0.15, -0.2];  % Slow yaw correction
 R_psi = place(A_psi, B_psi, poles_psi);
 fprintf('Psi regulator gains R_psi: %f, %f\n', R_psi(1), R_psi(2));
 

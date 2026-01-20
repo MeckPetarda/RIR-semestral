@@ -43,14 +43,14 @@ function PlotTrajectory3D(out, trajectory_data)
         has_ref = false;
     end
     
-    fig = figure('Position', [100, 100, 1400, 900]);
+    fig2 = figure('Position', [100, 100, 1400, 900]);
     
     % 3D trajectory
-    subplot(3, 3, [1, 4, 7]);
+    subplot(3, 5, [1, 2, 3, 6, 7, 8, 11, 12, 13]);
     plot3(pos_x, pos_y, -pos_z, 'b-', 'LineWidth', 2, 'DisplayName', 'Actual');
     hold on;
     if has_ref
-        plot3(ref_pos_x, ref_pos_y, -ref_pos_z, 'r--', 'LineWidth', 2, 'DisplayName', 'Reference');
+        %plot3(ref_pos_x, ref_pos_y, -ref_pos_z, 'r--', 'LineWidth', 2, 'DisplayName', 'Reference');
     end
     plot3(pos_x(1), pos_y(1), -pos_z(1), 'go', 'MarkerSize', 10, 'MarkerFaceColor', 'g'); % Start
     plot3(pos_x(end), pos_y(end), -pos_z(end), 'ko', 'MarkerSize', 10, 'MarkerFaceColor', 'k'); % End
@@ -61,11 +61,11 @@ function PlotTrajectory3D(out, trajectory_data)
     legend('Actual', 'Reference', 'Start', 'End');
     
     % XY plane (top view)
-    subplot(3, 3, [2, 3]);
+    subplot(3, 5, [4, 5]);
     plot(pos_x, pos_y, 'b-', 'LineWidth', 2, 'DisplayName', 'Actual');
     hold on;
     if has_ref
-        plot(ref_pos_x, ref_pos_y, 'r--', 'LineWidth', 2, 'DisplayName', 'Reference');
+        %plot(ref_pos_x, ref_pos_y, 'r--', 'LineWidth', 2, 'DisplayName', 'Reference');
     end
     plot(pos_x(1), pos_y(1), 'go', 'MarkerSize', 10, 'MarkerFaceColor', 'g');
     plot(pos_x(end), pos_y(end), 'ko', 'MarkerSize', 10, 'MarkerFaceColor', 'k');
@@ -84,11 +84,11 @@ function PlotTrajectory3D(out, trajectory_data)
     
     
     % XZ plane (side view)
-    subplot(3, 3, [5, 8]);
+    subplot(3, 5, [9, 14]);
     plot(pos_x, -pos_z, 'b-', 'LineWidth', 2, 'DisplayName', 'Actual');
     hold on;
     if has_ref
-        plot(ref_pos_x, -ref_pos_z, 'r--', 'LineWidth', 2, 'DisplayName', 'Reference');
+        %plot(ref_pos_x, -ref_pos_z, 'r--', 'LineWidth', 2, 'DisplayName', 'Reference');
     end
     plot(pos_x(1), -pos_z(1), 'go', 'MarkerSize', 10, 'MarkerFaceColor', 'g');
     plot(pos_x(end), -pos_z(end), 'ko', 'MarkerSize', 10, 'MarkerFaceColor', 'k');
@@ -98,11 +98,11 @@ function PlotTrajectory3D(out, trajectory_data)
     legend('Actual', 'Reference', 'Start', 'End');
 
     % YZ plane (side view)
-    subplot(3, 3, [6, 9]);
+    subplot(3, 5, [10, 15]);
     plot(pos_y, -pos_z, 'b-', 'LineWidth', 2, 'DisplayName', 'Actual');
     hold on;
     if has_ref
-        plot(ref_pos_y, -ref_pos_z, 'r--', 'LineWidth', 2, 'DisplayName', 'Reference');
+        %plot(ref_pos_y, -ref_pos_z, 'r--', 'LineWidth', 2, 'DisplayName', 'Reference');
     end
     plot(pos_y(1), -pos_z(1), 'go', 'MarkerSize', 10, 'MarkerFaceColor', 'g');
     plot(pos_y(end), -pos_z(end), 'ko', 'MarkerSize', 10, 'MarkerFaceColor', 'k');
@@ -111,5 +111,5 @@ function PlotTrajectory3D(out, trajectory_data)
     axis equal;
     legend('Actual', 'Reference', 'Start', 'End');
     
-    sgtitle('Trajectory Visualization - Actual vs Reference');   
+    sgtitle('Trajectory Visualization - Actual vs Reference');     
 end
