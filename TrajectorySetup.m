@@ -37,7 +37,7 @@ function trajectory_data = TrajectorySetup()
     % Generate fine time grid for lookup table
     t_min = timeForWaypointPasage(1);
     t_max = timeForWaypointPasage(end);
-    dt_grid = 0.1;  % 100 ms resolution - adjust if needed
+    dt_grid = 1;  % 100 ms resolution - adjust if needed
     time_grid = (t_min : dt_grid : t_max)';
     
     n_points = length(time_grid);
