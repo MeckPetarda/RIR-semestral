@@ -61,7 +61,7 @@ function PlotTrajectory3D(out)
     grid on; xlabel('X (m)'); ylabel('Z (m)');
     title('XZ Plane (Side View)');
     axis equal;
-    legend('Actual', 'Reference', 'Start', 'End');
+    legend('Actual', 'Start', 'End');
 
     % YZ plane (side view)
     subplot(3, 5, [10, 15]);
