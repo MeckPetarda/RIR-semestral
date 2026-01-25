@@ -74,5 +74,5 @@ function PlotTrajectory3D(out)
     axis equal;
     legend('Actual', 'Start', 'End');
     
-    sgtitle('Trajectory Visualization - Actual vs Reference');     
+    sgtitle('Trajectory Visualization');     
 end
