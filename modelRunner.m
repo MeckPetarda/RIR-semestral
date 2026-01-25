@@ -32,7 +32,7 @@ wayPoints = [0 0 -6;        % Waypoint 1
 
 %% --- Z REGULATOR ---
 % State: [z, v_z]
-% Control: Î"T (thrust perturbation from hover)
+% Control: T
 A_z = [0  1;
        0  0];
 B_z = [0; -1/Mass];
@@ -42,7 +42,7 @@ fprintf('Z regulator gains R_z: %f, %f\n', R_z(1), R_z(2));
 
 %% --- X REGULATOR ---
 % State: [x, v_x]
-% Control: Î"Î¸ (desired pitch angle)
+% Control: pitch angle
 A_x = [0  1;
        0  0];
 B_x = [0; -g];
@@ -51,7 +51,7 @@ R_x = place(A_x, B_x, poles_x);
 fprintf('X regulator gains R_x: %f, %f\n', R_x(1), R_x(2));
 
 % State: [theta_error, omega_theta]
-% Control: M2
+% Control: M2 (pitch moment)
 A_theta = [0  1;
            0  0];
 B_theta = [0; 1/YMomentOfInertia];
@@ -60,7 +60,7 @@ R_theta = place(A_theta, B_theta, poles_theta);
 
 %% --- Y REGULATOR ---
 % State: [y, v_y]
-% Control: Î"Ï† (desired roll angle)
+% Control: roll angle
 A_y = [0  1;
        0  0];
 B_y = [0; g];
@@ -69,7 +69,7 @@ R_y = place(A_y, B_y, poles_y);
 fprintf('Y regulator gains R_y: %f, %f\n', R_y(1), R_y(2));
 
 % State: [phi_error, omega_phi]  
-% Control: M1
+% Control: M1 (roll moment)
 A_phi = [0  1;
          0  0];
 B_phi = [0; 1/XMomentOfInertia];
@@ -86,13 +86,7 @@ poles_psi = [-0.15, -0.2];  % Slow yaw correction
 R_psi = place(A_psi, B_psi, poles_psi);
 fprintf('Psi regulator gains R_psi: %f, %f\n', R_psi(1), R_psi(2));
 
-trajectory_data = TrajectorySetup(wayPoints, timeForWaypointPasage);
-
-% Create Estimation Data Bus for Simulink Model
-trajectory_data_bus_info = Simulink.Bus.createObject(trajectory_data);
-trajectory_data_bus = evalin('base', trajectory_data_bus_info.busName);
-
 out = sim("model.mdl");
 
-PlotTrajectory3D(out, trajectory_data)
+PlotTrajectory3D(out)
 PlotSimulationResults(out)

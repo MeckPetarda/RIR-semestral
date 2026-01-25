@@ -1,5 +1,3 @@
-%% Extract and visualize Simulink simulation results
-
 function PlotSimulationResults(out)
     
     % Extract time and state data
